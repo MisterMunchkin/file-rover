@@ -20,7 +20,7 @@ var kernel = builder.Build();
 var chat = kernel.GetRequiredService<IChatCompletionService>("gpt-oss");
 var chatHistory = new ChatHistory();
 
-var systemMessagePath = "system-message.mdc";
+var systemMessagePath = "system-messages/organise-new-file.mdc";
 string systemMessageContent = File.ReadAllText(systemMessagePath);
 chatHistory.AddSystemMessage(systemMessageContent);
 Console.WriteLine("System message loaded from file." + systemMessageContent);
@@ -56,6 +56,11 @@ string folderStructure = @"{
         ""Earnings Report Mar 22 2025.pdf"",
         ""Equifax Tenant Report 2025.pdf""
       ]
+    },
+    {
+      ""name"": ""Perry House"",
+      ""subFolders"": [],
+      ""files"": []
     }
   ],
   ""files"": [

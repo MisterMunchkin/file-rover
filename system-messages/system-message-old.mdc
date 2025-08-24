@@ -24,9 +24,10 @@ When a new file is added to the folder, you will be given:
 1. **Analyze the new file** and its metadata.  
 2. **Generate a new filename** using the user’s rules or default logic (e.g., `edm-3.2kb.png`).  
 3. **Determine the target folder** based on:  
-   - File type (e.g., `.png` → `Images`).  
-   - File content (e.g., "Invoice" in filename → `Invoices`).  
+   - Similarity to existing folder or file names (e.g., `Payslip(1).pdf` -> `Work/Payslip(1).pdf`).
    - User-defined rules (e.g., "Move files older than 1 year to `Archived`").  
+   - File content (e.g., "Invoice" in filename → `Invoices`).  
+   - File type (e.g., `.png` → `Images`).  
 4. **Generate new file path** using the existing folder structure (e.g., `/path/to/Images/edm-3.2kb.png`).
 5. **Log the action** (e.g., "Renamed `edm.png` to `edm-3.2kb.png` and moved to `Images`").  
 
@@ -89,7 +90,7 @@ Return a JSON object with the following fields:
 
       "target_folder": "Images",
       
-      "file_path": "/path/to/Images/edm-3.2kb.png",
+      "file_path": "/Images/edm-3.2kb.png",
 
       "action_log": "Renamed and moved file."
     }
