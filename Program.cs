@@ -4,6 +4,7 @@ using file_rover.service.model;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using file_rover.dto.file_organise;
+using Microsoft.Extensions.Configuration;
 
 var builder = Kernel.CreateBuilder();
 
@@ -20,8 +21,13 @@ var kernel = builder.Build();
 var chat = kernel.GetRequiredService<IChatCompletionService>("gpt-oss");
 var chatHistory = new ChatHistory();
 
-var systemMessagePath = "system-messages/organise-new-file.mdc";
-string systemMessageContent = File.ReadAllText(systemMessagePath);
+var config = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
+
+var organiseNewFileSystemMessage = $"{config["SystemMessagePath"]}/organise-new-file.mdc";
+string systemMessageContent = File.ReadAllText(organiseNewFileSystemMessage);
 chatHistory.AddSystemMessage(systemMessageContent);
 Console.WriteLine("System message loaded from file." + systemMessageContent);
 
