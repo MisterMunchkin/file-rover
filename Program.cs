@@ -1,24 +1,14 @@
-﻿using Microsoft.SemanticKernel;
-using Microsoft.Extensions.DependencyInjection;
-using file_rover.service.model;
-using Microsoft.SemanticKernel.ChatCompletion;
+﻿using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using file_rover.dto.file_organise;
 using Microsoft.Extensions.Configuration;
+using file_rover.service;
+using file_rover.dto.user;
+using System.Text.Json;
 
-var builder = Kernel.CreateBuilder();
+var kernelService = new KernelService();
 
-// Register the custom TextEmbeddingService with a specific key
-var textEmbeddingService = new TextEmbeddingService();
-builder.Services.AddKeyedEmbeddingGenerator("nomic", textEmbeddingService);
-
-// Register the custom chat completion service with a specific key
-var chatCompletionService = new ChatCompletionService();
-builder.Services.AddKeyedSingleton<IChatCompletionService>("gpt-oss", chatCompletionService);
-
-var kernel = builder.Build();
-
-var chat = kernel.GetRequiredService<IChatCompletionService>("gpt-oss");
+var chat = kernelService.GetChatService();
 var chatHistory = new ChatHistory();
 
 var config = new ConfigurationBuilder()
@@ -26,7 +16,7 @@ var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
 
-var organiseNewFileSystemMessage = $"{config["SystemMessagePath"]}/organise-new-file.mdc";
+var organiseNewFileSystemMessage = Path.Combine(config["SystemMessagePath"]!, "organise-new-file.mdc");
 string systemMessageContent = File.ReadAllText(organiseNewFileSystemMessage);
 chatHistory.AddSystemMessage(systemMessageContent);
 Console.WriteLine("System message loaded from file." + systemMessageContent);
@@ -85,19 +75,69 @@ string folderStructure = @"{
   ]
 }";
 
+string configPath = config["UserConfigPath"]!;
+
+string userConfigJson = File.ReadAllText(configPath);
+
+UserConfig userConfig = JsonSerializer.Deserialize<UserConfig>(userConfigJson);
+
+// var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher.WatchPath);
+var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher.WatchPath);
+
+fileSystemRunner.FileReady += async (sender, e) =>
+{
+  _ = Task.Run(async () => {
+    try
+    {
+      Console.WriteLine($"File ready event received for file: {e}");
+      var fileName = Path.GetFileName(e);
+      chatHistory.AddUserMessage($"A new file named `{fileName}` has been added to the folder. file_path: {e}. The current folder structure is as follows:\n\n```json\n{folderStructure}```\n\n");
+
+      // Get AI response and run Kernel Function for moving file.
+
+      var response = await chat.GetChatMessageContentsAsync(chatHistory, executionSettings);
+      Console.WriteLine($"AI Response: ${response[^1].Content}");
+      Console.WriteLine("--------------------------------------------------");
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"Error processing file ready event: {ex.Message}");
+    }
+  });
+ 
+};
 
 while (true)
 {
-    Console.Write("Enter file name: ");
-    var input = Console.ReadLine();
+  Console.WriteLine("Type 'toggle' to start/stop FileSystemRunner, 'exit' to quit:"); ;
+  var input = Console.ReadLine()?.Trim().ToLower();
 
-    if (string.IsNullOrEmpty(input) || input.ToLower() == "exit") break;
+  if (input == "exit") break;
 
-    chatHistory.AddUserMessage($"A new file named `{input}` has been added to the folder. The current folder structure is as follows:\n\n```json\n{folderStructure}```\n\n");
+  if (input == "toggle")
+  {
+    if (fileSystemRunner.IsRunning)
+    {
+      fileSystemRunner.Stop();
+      Console.WriteLine("FileSystemRunner stopped.");
+    }
+    else
+    {
+      fileSystemRunner.Start();
+      Console.WriteLine("FileSystemRunner started.");
+    }
+  }
 
-    var response = await chat.GetChatMessageContentsAsync(chatHistory, executionSettings);
-    Console.WriteLine($"AI Response: ${response[^1].Content}");
-    Console.WriteLine("--------------------------------------------------");
+  Console.CancelKeyPress += (s, e) =>
+  {
+    Console.WriteLine("Cancellation requested, stopping...");
+    fileSystemRunner.Dispose();
+    Environment.Exit(0);
+  };
 }
 
+
+
+fileSystemRunner.Dispose();
 Console.WriteLine("Exiting...");
+
