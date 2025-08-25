@@ -5,26 +5,33 @@ using Microsoft.Extensions.Configuration;
 using file_rover.service;
 using file_rover.dto.user;
 using System.Text.Json;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 var kernelService = new KernelService();
 
-var chat = kernelService.GetChatService();
-var chatHistory = new ChatHistory();
-
+//Configuration Builder
 var config = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
 
+//NOTE: Would be good to have a chat history class wrapper for the file/organiser flow.
 var organiseNewFileSystemMessage = Path.Combine(config["SystemMessagePath"]!, "organise-new-file.mdc");
 string systemMessageContent = File.ReadAllText(organiseNewFileSystemMessage);
+
+// Add System Message to chat history
+var chat = kernelService.GetChatService();
+var chatHistory = new ChatHistory();
 chatHistory.AddSystemMessage(systemMessageContent);
+
 Console.WriteLine("System message loaded from file." + systemMessageContent);
 
-var executionSettings = new AzureOpenAIPromptExecutionSettings {
-    ResponseFormat = typeof(FileOrganiseResponseDto)
+var executionSettings = new AzureOpenAIPromptExecutionSettings
+{
+  ResponseFormat = typeof(FileMutateResponseDto),
+  ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
 };
-string folderStructure = @"{
+string TEST_FOLDER_STRUCTURE = @"{
   ""name"": ""Downloads"",
   ""subFolders"": [
     {
@@ -79,24 +86,36 @@ string configPath = config["UserConfigPath"]!;
 
 string userConfigJson = File.ReadAllText(configPath);
 
-UserConfig userConfig = JsonSerializer.Deserialize<UserConfig>(userConfigJson);
+UserConfig userConfig = JsonSerializer.Deserialize<UserConfig>(userConfigJson ?? throw new InvalidOperationException("User config JSON is null")) 
+  ?? throw new InvalidOperationException("Deserialized user config is null");
 
-// var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher.WatchPath);
-var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher.WatchPath);
+//NOTE: Should have a default path already configured by user before running file system runner. This should be part of the onboarding step before even
+// running file system runner
+var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher?.WatchPath ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
-fileSystemRunner.FileReady += async (sender, e) =>
+fileSystemRunner.FileReady +=  (sender, e) =>
 {
   _ = Task.Run(async () => {
     try
     {
       Console.WriteLine($"File ready event received for file: {e}");
       var fileName = Path.GetFileName(e);
-      chatHistory.AddUserMessage($"A new file named `{fileName}` has been added to the folder. file_path: {e}. The current folder structure is as follows:\n\n```json\n{folderStructure}```\n\n");
+      chatHistory.AddUserMessage($"A new file named `{fileName}` has been added to the folder. file_path: {e}. The current folder structure is as follows:\n\n```json\n{TEST_FOLDER_STRUCTURE}```\n\n");
 
       // Get AI response and run Kernel Function for moving file.
 
-      var response = await chat.GetChatMessageContentsAsync(chatHistory, executionSettings);
-      Console.WriteLine($"AI Response: ${response[^1].Content}");
+      var response = await chat.GetChatMessageContentsAsync(chatHistory, executionSettings, kernel: kernelService.Kernel);
+
+      var aiResponse = response[^1].Content;
+
+      if (string.IsNullOrWhiteSpace(aiResponse))
+      {
+        Console.WriteLine("AI response is empty, skipping.");
+        return;
+      }
+
+      chatHistory.AddAssistantMessage(aiResponse);
+      Console.WriteLine($"AI Response: ${aiResponse}");
       Console.WriteLine("--------------------------------------------------");
     }
     catch (Exception ex)

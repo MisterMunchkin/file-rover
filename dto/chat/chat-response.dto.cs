@@ -1,33 +1,59 @@
+using System.Text.Json.Serialization;
+
 namespace Dto.Chat
 {
     // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class ChatResponseChoice
     {
         public int ChatResponseindex { get; set; }
-        public ChatResponseMessage message { get; set; }
-        public string finish_reason { get; set; }
+
+        [JsonPropertyName("message")]
+        public required ChatResponseMessage Message { get; set; }
+
+
+        [JsonPropertyName("finish_reason")]
+        public required string FinishReason { get; set; }
     }
 
     public class ChatResponseMessage
     {
-        public string role { get; set; }
-        public string content { get; set; }
+        [JsonPropertyName("role")]
+        public required string Role { get; set; }
+
+        [JsonPropertyName("content")]
+        public required string Content { get; set; }
     }
 
     public class ChatResponse
     {
-        public string id { get; set; }
-        public string @object { get; set; }
-        public int created { get; set; }
-        public string model { get; set; }
-        public List<ChatResponseChoice> choices { get; set; }
-        public ChatResponseUsage usage { get; set; }
+        [JsonPropertyName("id")]
+        public required string Id { get; set; }
+
+        [JsonPropertyName("object")]
+        public required string Object { get; set; }
+
+        [JsonPropertyName("created")]
+        public int Created { get; set; }
+
+        [JsonPropertyName("model")]
+        public required string Model { get; set; }
+
+        [JsonPropertyName("choices")]
+        public required List<ChatResponseChoice> Choices { get; set; }
+
+        [JsonPropertyName("usage")]
+        public required ChatResponseUsage Usage { get; set; }
     }
 
     public class ChatResponseUsage
     {
-        public int prompt_tokens { get; set; }
-        public int completion_tokens { get; set; }
-        public int total_tokens { get; set; }
+        [JsonPropertyName("prompt_tokens")]
+        public int PromptTokens { get; set; }
+
+        [JsonPropertyName("completion_tokens")]
+        public int CompletionTokens { get; set; }
+
+        [JsonPropertyName("total_tokens")]
+        public int TotalTokens { get; set; }
     }
 }

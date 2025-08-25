@@ -26,16 +26,19 @@ namespace file_rover.service.model
                     for (int i = 0; i < chatHistory.Count; i++)
                     {
                         var message = chatHistory[i];
-                        var msg = new ChatMessage();
-                        msg.role = message.Role.ToString().ToLower();
-                        msg.content = message.Content ?? string.Empty;
-                        root.messages.Add(msg);
+
+                        var msg = new ChatMessage
+                        {
+                            Role = message.Role.ToString().ToLower(),
+                            Content = message.Content ?? string.Empty
+                        };
+                        root.Messages.Add(msg);
                     }
 
                     // validate if ModelName is not empty and add it to the root object
                     if (!string.IsNullOrEmpty(ModelName))
                     {
-                        root.model = ModelName;
+                        root.Model = ModelName;
                     }
 
                     // generate the json string from the root object
@@ -50,7 +53,7 @@ namespace file_rover.service.model
                     // deserialize the response content into a ChatResponse object
                     var chatResponse = JsonSerializer.Deserialize<ChatResponse>(responseContent);
 
-                    var chatResponseMessageContent = chatResponse?.choices[0].message.content ?? null;
+                    var chatResponseMessageContent = chatResponse?.Choices[0].Message.Content ?? null;
                     if (chatResponseMessageContent == null)
                     {
                         throw new Exception("Chat response message content is null.");

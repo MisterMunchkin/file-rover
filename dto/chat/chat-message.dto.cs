@@ -1,8 +1,12 @@
-namespace Dto.Chat
+using System.Text.Json.Serialization;
+
+namespace Dto.Chat;
+
+public class ChatMessage
 {
-    public class ChatMessage
-    {
-        public string role { get; set; }
-        public string content { get; set; }
-    }
+    [JsonPropertyName("role")]
+    public required string Role { get; set; }
+
+    [JsonPropertyName("content")]
+    public required string Content { get; set; }
 }

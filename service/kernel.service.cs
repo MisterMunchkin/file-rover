@@ -1,3 +1,4 @@
+using file_rover.plugins;
 using file_rover.service.model;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
@@ -17,6 +18,7 @@ public class KernelService
 
         Builder.Services.AddKeyedEmbeddingGenerator("nomic", new TextEmbeddingService());
         Builder.Services.AddKeyedSingleton<IChatCompletionService>("gpt-oss", new ChatCompletionService());
+        Builder.Plugins.AddFromType<FileMutatorPlugin>("file_mutator");
 
         Kernel = Builder.Build();
     }

@@ -1,20 +1,31 @@
+using System.Text.Json.Serialization;
+
 namespace Dto.Chat
 {
     public class ChatRequest
     {
         public ChatRequest()
         {
-            messages = new List<ChatMessage>();
-            temperature = 0.7f;
-            max_tokens = 2500;
-            stream = false;
-            model = "";
+            Messages = new List<ChatMessage>();
+            Temperature = 0.7f;
+            MaxTokens = 2500;
+            Stream = false;
+            Model = "";
         }
-        public string model { get; set; }
-        public List<ChatMessage> messages { get; set; }
-        public float temperature { get; set; }
-        public int max_tokens { get; set; }
-        public bool stream { get; set; }
+        [JsonPropertyName("model")]
+        public string Model { get; set; }
+
+        [JsonPropertyName("messages")]
+        public List<ChatMessage> Messages { get; set; }
+
+        [JsonPropertyName("temperature")]
+        public float Temperature { get; set; }
+
+        [JsonPropertyName("max_tokens")]
+        public int MaxTokens { get; set; }
+
+        [JsonPropertyName("stream")]
+        public bool Stream { get; set; }
         
     }
 }
