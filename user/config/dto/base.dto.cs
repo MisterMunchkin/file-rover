@@ -1,7 +1,6 @@
-using file_rover.dto.file;
-using file_rover.dto.shared;
+using file_rover.shared.dto;
 
-namespace file_rover.dto.user;
+namespace file_rover.user.config.dto;
 
 public class UserConfig
 {

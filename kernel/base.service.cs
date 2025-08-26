@@ -1,10 +1,10 @@
-using file_rover.plugins;
-using file_rover.service.model;
+namespace file_rover.kernel;
+
+using file_rover.file.mutator;
+using file_rover.kernel.lm_studio;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-
-namespace file_rover.service;
 
 public class KernelService
 {
@@ -16,8 +16,12 @@ public class KernelService
     {
         Builder = Kernel.CreateBuilder();
 
-        Builder.Services.AddKeyedEmbeddingGenerator("nomic", new TextEmbeddingService());
+        // Builder.Services.AddKeyedEmbeddingGenerator("nomic", new TextEmbeddingService());
         Builder.Services.AddKeyedSingleton<IChatCompletionService>("gpt-oss", new ChatCompletionService());
+        // Builder.AddOllamaChatCompletion(
+        //     modelId: "llama3.2:8b",
+        //     endpoint: new Uri("http://localhost:11434")
+        // );
         Builder.Plugins.AddFromType<FileMutatorPlugin>("file_mutator");
 
         Kernel = Builder.Build();

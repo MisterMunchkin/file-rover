@@ -1,10 +1,8 @@
 
 using System.ComponentModel;
-using file_rover.dto.file;
-using file_rover.dto.user;
 using Microsoft.SemanticKernel;
 
-namespace file_rover.plugins;
+namespace file_rover.file.mutator;
 
 public class FileMutatorPlugin
 {

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace file_rover.dto.file;
+namespace file_rover.shared.dto;
 public class FileTypeConfig
 {
     [JsonPropertyName("rename_strategy")]

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Dto.Chat;
+namespace file_rover.kernel.lm_studio.dto.chat;
 
 public class ChatMessage
 {

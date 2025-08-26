@@ -1,3 +1,5 @@
+namespace file_rover.file.system;
+
 public class FileSystemRunner : IRunner, IDisposable
 {
     private static FileSystemRunner? _instance;

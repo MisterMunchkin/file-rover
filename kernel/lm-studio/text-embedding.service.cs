@@ -1,6 +1,7 @@
+using file_rover.kernel.lm_studio.dto.embedding;
 using Microsoft.Extensions.AI;
 using System.Net.Http.Json;
-using Dto.Embedding;
+
 
 
 namespace file_rover.service.model

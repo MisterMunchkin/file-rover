@@ -2,29 +2,24 @@
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using file_rover.dto.file_organise;
 using Microsoft.Extensions.Configuration;
-using file_rover.service;
-using file_rover.dto.user;
-using System.Text.Json;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using file_rover.user.config;
+using file_rover.kernel;
+using file_rover.file.system;
 
 var kernelService = new KernelService();
 
-//Configuration Builder
-var config = new ConfigurationBuilder()
+var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
 
-//NOTE: Would be good to have a chat history class wrapper for the file/organiser flow.
-var organiseNewFileSystemMessage = Path.Combine(config["SystemMessagePath"]!, "organise-new-file.mdc");
-string systemMessageContent = File.ReadAllText(organiseNewFileSystemMessage);
+var userConfigService = new UserConfigService(configuration);
 
 // Add System Message to chat history
 var chat = kernelService.GetChatService();
 var chatHistory = new ChatHistory();
-chatHistory.AddSystemMessage(systemMessageContent);
-
-Console.WriteLine("System message loaded from file." + systemMessageContent);
+chatHistory.AddSystemMessage(userConfigService.OrganiseNewFileSystemMessageContent);
 
 var executionSettings = new AzureOpenAIPromptExecutionSettings
 {
@@ -82,16 +77,7 @@ string TEST_FOLDER_STRUCTURE = @"{
   ]
 }";
 
-string configPath = config["UserConfigPath"]!;
-
-string userConfigJson = File.ReadAllText(configPath);
-
-UserConfig userConfig = JsonSerializer.Deserialize<UserConfig>(userConfigJson ?? throw new InvalidOperationException("User config JSON is null")) 
-  ?? throw new InvalidOperationException("Deserialized user config is null");
-
-//NOTE: Should have a default path already configured by user before running file system runner. This should be part of the onboarding step before even
-// running file system runner
-var fileSystemRunner = FileSystemRunner.Instance(userConfig.FileSystemWatcher?.WatchPath ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+var fileSystemRunner = FileSystemRunner.Instance(userConfigService.WatchPath);
 
 fileSystemRunner.FileReady +=  (sender, e) =>
 {

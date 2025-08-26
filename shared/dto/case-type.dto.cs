@@ -1,4 +1,4 @@
-namespace file_rover.dto.shared;
+namespace file_rover.shared.dto;
 public enum CaseType
 {
     CamelCase,
