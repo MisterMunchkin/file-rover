@@ -1,49 +1,62 @@
 
 using System.ComponentModel;
+using System.Text.Json.Serialization;
+using file_rover.user.config;
+using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel;
 
 namespace file_rover.file.mutator;
 
+public class FileOperationResult
+{
+    [JsonPropertyName("file_name")]
+    public string FileName { get; set; } = "";
+    [JsonPropertyName("file_path")]
+    public string FilePath { get; set; } = "";
+    [JsonPropertyName("directory")]
+    public string Directory { get; set; } = "";
+}
+
 public class FileMutatorPlugin
 {
-    private const string PluginName = nameof(FileMutatorPlugin);
+    public static string Name { get; } = "file_mutator";
+    private readonly string _watchPath;
 
-    [KernelFunction("rename_file")]
-    [Description("Renames a file based on its metadata and user configuration")]
-    public static async Task<FileInfo> RenameFile(string filePath, string newFileName)
+    public FileMutatorPlugin()
     {
-        // Plugin implementation goes here
-        var fileInfo = new FileInfo(filePath);
-        if (!fileInfo.Exists)
-        {
-            throw new FileNotFoundException($"File not found: {filePath}");
-        }
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
 
-        fileInfo.MoveTo(newFileName);
-
-        // Return a dummy result for now
-        return await Task.FromResult(fileInfo);
+        var userConfigService = new UserConfigService(configuration);
+        _watchPath = userConfigService.WatchPath;
     }
 
     [KernelFunction("move_file")]
     [Description("Moves a file to the specified destination folder")]
-    public static async Task<FileInfo> MoveFile(string filePath, string destinationFolder)
+    public async Task<FileOperationResult> MoveFile(string filePath, string destinationFolder)
     {
         var fileInfo = new FileInfo(filePath);
         if (!fileInfo.Exists)
-        {
             throw new FileNotFoundException($"File not found: {filePath}");
-        }
+    
+        var fullTargetPath = Path.GetFullPath(Path.Combine(_watchPath, destinationFolder));
+        if (!fullTargetPath.StartsWith(Path.GetFullPath(_watchPath)))
+            throw new InvalidOperationException("Agent tried to move file outside watch path!");
+        if (!Directory.Exists(fullTargetPath))
+            Directory.CreateDirectory(fullTargetPath);
 
-        var destDir = new DirectoryInfo(destinationFolder);
-        if (!destDir.Exists)
-        {
-            throw new DirectoryNotFoundException($"Destination folder not found: {destinationFolder}");
-        }
-
-        var destFilePath = Path.Combine(destinationFolder, fileInfo.Name);
+        var destFilePath = Path.Combine(fullTargetPath, fileInfo.Name);
         fileInfo.MoveTo(destFilePath);
 
-        return await Task.FromResult(fileInfo);
+        FileOperationResult result = new()
+        {
+            FileName = fileInfo.Name,
+            FilePath = destFilePath,
+            Directory = destinationFolder
+        };
+
+        return await Task.FromResult(result);
     }
 }

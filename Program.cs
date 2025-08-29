@@ -1,13 +1,7 @@
-﻿using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
-using file_rover.dto.file_organise;
-using Microsoft.Extensions.Configuration;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
+﻿using Microsoft.Extensions.Configuration;
 using file_rover.user.config;
-using file_rover.kernel;
 using file_rover.file.system;
-
-var kernelService = new KernelService();
+using file_rover.file.mutator.agentic;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -15,102 +9,11 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var userConfigService = new UserConfigService(configuration);
-
-// Add System Message to chat history
-var chat = kernelService.GetChatService();
-var chatHistory = new ChatHistory();
-chatHistory.AddSystemMessage(userConfigService.OrganiseNewFileSystemMessageContent);
-
-var executionSettings = new AzureOpenAIPromptExecutionSettings
-{
-  ResponseFormat = typeof(FileMutateResponseDto),
-  ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-};
-string TEST_FOLDER_STRUCTURE = @"{
-  ""name"": ""Downloads"",
-  ""subFolders"": [
-    {
-      ""name"": ""NBI"",
-      ""subFolders"": [],
-      ""files"": [
-        ""att.VWlaQ4iii-MFIBjZ0eViepRvvm4hGkGpN9Ylcy-iD3E.JPG"",
-        ""att._OirQH6_aAlSeBE0HTofllFpwXoKDWCiX3Rv-f1JLLQ.JPG""
-      ]
-    },
-    {
-      ""name"": ""Robins Payslip"",
-      ""subFolders"": [],
-      ""files"": [
-        ""PaySlip(1).pdf"",
-        ""PaySlip.pdf"",
-        ""Robin Tubungbanua Payslip Mar 9 2025.pdf""
-      ]
-    },
-    {
-      ""name"": ""earnings"",
-      ""subFolders"": [],
-      ""files"": [
-        ""Earnings Apr 2024 to Mar 2025.csv"",
-        ""Earnings Report Mar 22 2025.pdf"",
-        ""Equifax Tenant Report 2025.pdf""
-      ]
-    },
-    {
-      ""name"": ""Perry House"",
-      ""subFolders"": [],
-      ""files"": []
-    }
-  ],
-  ""files"": [
-    "".DS_Store"",
-    "".localized"",
-    ""ArcRecoveryPhrase.png"",
-    ""Azure Template.zip"",
-    ""Extreme Ownership Jocko Willink.epub"",
-    ""Fri, Jul 11, 2025 9:18 PM - bouldernana export.json"",
-    ""IMG_9814.MOV"",
-    ""IMG_9815.MOV"",
-    ""Perry House Parcel Locker Instructions.pdf"",
-    ""Residential Tenancy Agreement Apr 4 2025 Bowen Hills.pdf"",
-    ""The 5 Love Languages.epub"",
-    ""Tue, Jul 8, 2025 7:16 PM - bouldernana export.json""
-  ]
-}";
-
 var fileSystemRunner = FileSystemRunner.Instance(userConfigService.WatchPath);
 
-fileSystemRunner.FileReady +=  (sender, e) =>
-{
-  _ = Task.Run(async () => {
-    try
-    {
-      Console.WriteLine($"File ready event received for file: {e}");
-      var fileName = Path.GetFileName(e);
-      chatHistory.AddUserMessage($"A new file named `{fileName}` has been added to the folder. file_path: {e}. The current folder structure is as follows:\n\n```json\n{TEST_FOLDER_STRUCTURE}```\n\n");
 
-      // Get AI response and run Kernel Function for moving file.
-
-      var response = await chat.GetChatMessageContentsAsync(chatHistory, executionSettings, kernel: kernelService.Kernel);
-
-      var aiResponse = response[^1].Content;
-
-      if (string.IsNullOrWhiteSpace(aiResponse))
-      {
-        Console.WriteLine("AI response is empty, skipping.");
-        return;
-      }
-
-      chatHistory.AddAssistantMessage(aiResponse);
-      Console.WriteLine($"AI Response: ${aiResponse}");
-      Console.WriteLine("--------------------------------------------------");
-    }
-    catch (Exception ex)
-    {
-      Console.WriteLine($"Error processing file ready event: {ex.Message}");
-    }
-  });
- 
-};
+var fileMutatorAgenticService = new FileMutatorAgenticOllamaService(userConfigService.WatchPath);
+fileMutatorAgenticService.Listen();
 
 while (true)
 {

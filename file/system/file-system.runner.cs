@@ -52,6 +52,10 @@ public class FileSystemRunner : IRunner, IDisposable
         if (e.Name.StartsWith('.')) return;
         if (e.Name.EndsWith(".crdownload") || e.Name.EndsWith(".tmp") || e.Name.EndsWith(".part")) return;
 
+        var parentDir = Path.GetDirectoryName(e.FullPath);
+        if (!string.Equals(parentDir, _watcher.Path, StringComparison.OrdinalIgnoreCase)) return;
+
+
         lock (_pending)
         {
             _pending[e.FullPath] = DateTime.Now;
