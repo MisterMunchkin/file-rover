@@ -7,21 +7,20 @@ using Microsoft.SemanticKernel.Connectors.Ollama;
 
 namespace file_rover.file.mutator.agentic;
 
-public class FileMutatorAgenticOllamaService
+public class FileMutatorAgenticService
 {
   private readonly ChatHistoryAgentThread _agentThread = new();
   private readonly Kernel _kernel;
   private readonly string _watchPath;
 
   private readonly ChatCompletionAgent _agent;
-  private readonly string _agentServiceId = "llama_agent";
 
-  public FileMutatorAgenticOllamaService(
+  public FileMutatorAgenticService(
     string watchPath
   )
   {
     _watchPath = watchPath;
-    _kernel = new KernelBuilder()
+    _kernel = KernelBuilder
       .GetKernel();
 
     KernelPlugin fileMutator = _kernel.CreatePluginFromType<FileMutatorPlugin>(FileMutatorPlugin.Name);
@@ -34,8 +33,8 @@ public class FileMutatorAgenticOllamaService
       Arguments = new KernelArguments(new OllamaPromptExecutionSettings()
       {
         FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
-        Temperature = 0.1f,
-        ServiceId = _agentServiceId
+        Temperature = 0.6f, // Add some randomness to encourage exploration
+        ServiceId = KernelBuilder.LLama3_2_3b
       })
       {
         {"watch_path", _watchPath},

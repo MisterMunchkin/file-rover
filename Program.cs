@@ -2,6 +2,7 @@
 using file_rover.user.config;
 using file_rover.file.system;
 using file_rover.file.mutator.agentic;
+using file_rover.file.renamer.agentic;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -12,13 +13,19 @@ var userConfigService = new UserConfigService(configuration);
 var fileSystemRunner = FileSystemRunner.Instance(userConfigService.WatchPath);
 
 
-var fileMutatorAgenticService = new FileMutatorAgenticOllamaService(userConfigService.WatchPath);
+var fileMutatorAgenticService = new FileMutatorAgenticService(userConfigService.WatchPath);
 fileMutatorAgenticService.Listen();
+
+var fileRenamerAgenticService = new FileRenamerAgenticService();
 
 while (true)
 {
-  Console.WriteLine("Type 'toggle' to start/stop FileSystemRunner, 'exit' to quit:"); ;
-  var input = Console.ReadLine()?.Trim().ToLower();
+  Console.WriteLine("""
+    Type 'toggle' to start/stop FileSystemRunner, 'exit' to quit:
+
+    > type full path to a file to test FileRenamerAgenticService:
+  """);
+  var input = Console.ReadLine();
 
   if (input == "exit") break;
 
@@ -34,14 +41,14 @@ while (true)
       fileSystemRunner.Start();
       Console.WriteLine("FileSystemRunner started.");
     }
+    continue;
   }
 
-  Console.CancelKeyPress += (s, e) =>
+  if (!string.IsNullOrEmpty(input) && File.Exists(input))
   {
-    Console.WriteLine("Cancellation requested, stopping...");
-    fileSystemRunner.Dispose();
-    Environment.Exit(0);
-  };
+    await fileRenamerAgenticService.TriggerRename(input);
+    continue;
+  }
 }
 
 
