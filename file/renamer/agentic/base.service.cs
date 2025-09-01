@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Threading.Tasks;
 using file_rover.kernel;
 using Microsoft.SemanticKernel;
@@ -27,20 +28,26 @@ public class FileRenamerAgenticService
             Kernel = _kernel,
             Arguments = new KernelArguments(new OllamaPromptExecutionSettings()
             {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
                 Temperature = 0.1f, // More deterministic since we want consistent renaming
                 ServiceId = KernelBuilder.LLama3_1_8b
             }),
             Name = "FileRenamerAgent",
-            Instructions = $"""
+            Instructions = """
                 You aren an agent that helps rename files withing a file system.
 
-                - You will be provided with a file path to the file.
-                - You will be provided with the file naming convention to use.
-                - You will be provided with a list of metadata fields to extract and use in the naming convention.
-                - You will use the file extension to determine which plugin function to use to rename the file.
-                - You will use the "rename_image" function for image files (jpg, png, etc).
-                - If the plugin function throws an error, you will respond with the error message.
+                You will be provided with the following information in the request:
+                    - image_path: The path to the image file to be renamed.
+                    - convention: The naming convention using metadata fields enclosed in double curly braces, e.g., {{field_name}}-{{another_field}}
+                    - metadata_field_maps: A list of metadata fields to extract and use in the naming convention.
+
+                Your task is to:
+                    - Use the file extension to determine which plugin function to use to rename the file. (e.g., "jpg" -> "rename_image")
+                    - Call the appropriate plugin function with the provided information.
+                    - Return the result of the plugin function.
+                    - If the plugin function throws an error, you will respond with the error message.
+
+                Do not respond with a function call in JSON format. Always invoke the function and return its result.
             """
         };
 
@@ -60,11 +67,14 @@ public class FileRenamerAgenticService
                 "file_size"
             ];
 
-            var message = new ChatMessageContent(AuthorRole.User, $"""
-                Rename the file at this path: {filePath}
-                Using this naming convention: {testConvention}
-                Using these metadata fields: {string.Join(", ", testMetadataFields)}
-            """);
+            var jsonRequest = JsonSerializer.Serialize(new RenameImageFileRequest
+            {
+                ImagePath = filePath,
+                Convention = testConvention,
+                MetadataFieldMaps = testMetadataFields
+            }) ?? throw new JsonException("Failed to serialize rename request.");
+
+            var message = new ChatMessageContent(AuthorRole.User, jsonRequest);
 
             DateTime now = DateTime.Now;
             KernelArguments arguments = new()

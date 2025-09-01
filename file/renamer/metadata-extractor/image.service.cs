@@ -14,7 +14,7 @@ public class FileRenamerMetadataExtractorImageService : FileRenamerMetadataExtra
     {
         { "Jpeg", typeof(JpegDirectory) },
         { "Png", typeof(PngDirectory) },
-        { "Gif", typeof(GifImageDirectory) },
+        { "Gif", typeof(GifHeaderDirectory) },
         { "Bmp", typeof(BmpHeaderDirectory) },
         { "GeoTiff",  typeof(GeoTiffDirectory) }
     };
@@ -56,7 +56,7 @@ public class FileRenamerMetadataExtractorImageService : FileRenamerMetadataExtra
         foreach (var supportedDir in SupportedDirectories)
         {
             Type supportedType = supportedDir.Value;
-            var dir = directories.FirstOrDefault(d => d.GetType() == supportedType);
+            var dir = directories.FirstOrDefault(d => supportedType.IsAssignableFrom(d.GetType()));
             if (dir == null) continue;
 
             if (dir is JpegDirectory jpegDir)
@@ -71,50 +71,74 @@ public class FileRenamerMetadataExtractorImageService : FileRenamerMetadataExtra
                 ExtractTiffMetadata(tiffDir, metadata);
         }
 
-        var exifDir = directories.OfType<ExifIfd0Directory>().FirstOrDefault();
-        if (exifDir != null)
+        var exifIfd0 = directories.OfType<ExifIfd0Directory>().FirstOrDefault();
+        var exifSubIfd = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
+        if (exifIfd0 != null)
         {
-            metadata["camera_make"] = exifDir.GetDescription(ExifDirectoryBase.TagMake) ?? "";
-            metadata["camera_model"] = exifDir.GetDescription(ExifDirectoryBase.TagModel) ?? "";
-            metadata["orientation"] = exifDir.GetDescription(ExifDirectoryBase.TagOrientation) ?? "";
-            metadata["width"] = exifDir.GetDescription(ExifDirectoryBase.TagImageWidth) ?? "";
-            metadata["height"] = exifDir.GetDescription(ExifDirectoryBase.TagImageHeight) ?? "";
+            if (exifIfd0.ContainsTag(ExifDirectoryBase.TagMake))
+                metadata["camera_make"] = exifIfd0.GetDescription(ExifDirectoryBase.TagMake) ?? "";
+            if (exifIfd0.ContainsTag(ExifDirectoryBase.TagModel))
+                metadata["camera_model"] = exifIfd0.GetDescription(ExifDirectoryBase.TagModel) ?? "";
+            if (exifIfd0.ContainsTag(ExifDirectoryBase.TagOrientation))
+                metadata["orientation"] = exifIfd0.GetDescription(ExifDirectoryBase.TagOrientation) ?? "";
+            if (exifIfd0.ContainsTag(ExifDirectoryBase.TagImageWidth))
+                metadata["width"] = exifIfd0.GetDescription(ExifDirectoryBase.TagImageWidth) ?? "";
+            if (exifIfd0.ContainsTag(ExifDirectoryBase.TagImageHeight))
+                metadata["height"] = exifIfd0.GetDescription(ExifDirectoryBase.TagImageHeight) ?? "";
         }
+
+        if (exifSubIfd != null && exifSubIfd.ContainsTag(ExifDirectoryBase.TagColorSpace))
+            metadata["color_space"] = exifSubIfd.GetDescription(ExifDirectoryBase.TagColorSpace) ?? "";
+        
 
         return Task.FromResult(metadata);
     }
 
     private static void ExtractTiffMetadata(GeoTiffDirectory tiffDir, Dictionary<string, object> metadata)
     {
-        metadata["geo_type"] = tiffDir.GetDescription(GeoTiffDirectory.TagGeographicType) ?? "";
-        metadata["proj_center_lat"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLat);
-        metadata["proj_center_long"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLong);
+        if (tiffDir.ContainsTag(GeoTiffDirectory.TagGeographicType))
+            metadata["geo_type"] = tiffDir.GetDescription(GeoTiffDirectory.TagGeographicType) ?? "";
+        if (tiffDir.ContainsTag(GeoTiffDirectory.TagProjCenterLat))
+            metadata["proj_center_lat"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLat);
+        if (tiffDir.ContainsTag(GeoTiffDirectory.TagProjCenterLong))
+            metadata["proj_center_long"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLong);
     }
 
     private static void ExtractBmpMetadata(BmpHeaderDirectory bmpDir, Dictionary<string, object> metadata)
     {
-        metadata["width"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageWidth);
-        metadata["height"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageHeight);
-        metadata["color_space"] = bmpDir.GetDescription(BmpHeaderDirectory.TagColorSpaceType) ?? "";
+        if (bmpDir.ContainsTag(BmpHeaderDirectory.TagImageWidth))
+            metadata["width"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageWidth);
+        if (bmpDir.ContainsTag(BmpHeaderDirectory.TagImageHeight))
+            metadata["height"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageHeight);
+        if (bmpDir.ContainsTag(BmpHeaderDirectory.TagColorSpaceType))
+            metadata["color_space"] = bmpDir.GetDescription(BmpHeaderDirectory.TagColorSpaceType) ?? "";
     }
 
     private static void ExtractGifMetadata(GifHeaderDirectory gifDir, Dictionary<string, object> metadata)
     {
-        metadata["width"] = gifDir.GetInt32(GifHeaderDirectory.TagImageWidth);
-        metadata["height"] = gifDir.GetInt32(GifHeaderDirectory.TagImageHeight);
+        if (gifDir.ContainsTag(GifHeaderDirectory.TagImageWidth))
+            metadata["width"] = gifDir.GetInt32(GifHeaderDirectory.TagImageWidth);
+        if (gifDir.ContainsTag(GifHeaderDirectory.TagImageHeight))
+            metadata["height"] = gifDir.GetInt32(GifHeaderDirectory.TagImageHeight);
     }
 
     private static void ExtractPngMetadata(PngDirectory pngDir, Dictionary<string, object> metadata)
     {
-        metadata["width"] = pngDir.GetInt32(PngDirectory.TagImageWidth);
-        metadata["height"] = pngDir.GetInt32(PngDirectory.TagImageHeight);
-        metadata["color_type"] = pngDir.GetDescription(PngDirectory.TagColorType) ?? "";
-        metadata["background_color"] = pngDir.GetDescription(PngDirectory.TagBackgroundColor) ?? "";
+        if (pngDir.ContainsTag(PngDirectory.TagImageWidth))
+            metadata["width"] = pngDir.GetInt32(PngDirectory.TagImageWidth);
+        if (pngDir.ContainsTag(PngDirectory.TagImageHeight))
+            metadata["height"] = pngDir.GetInt32(PngDirectory.TagImageHeight);
+        if (pngDir.ContainsTag(PngDirectory.TagColorType))
+            metadata["color_type"] = pngDir.GetDescription(PngDirectory.TagColorType) ?? "";
+        if (pngDir.ContainsTag(PngDirectory.TagBackgroundColor))
+            metadata["background_color"] = pngDir.GetDescription(PngDirectory.TagBackgroundColor) ?? "";
     }
 
     private static void ExtractJpegMetadata(JpegDirectory dir, Dictionary<string, object> metadata)
     {
-        metadata["width"] = dir.GetInt32(JpegDirectory.TagImageWidth);
-        metadata["height"] = dir.GetInt32(JpegDirectory.TagImageHeight);
+        if (dir.ContainsTag(JpegDirectory.TagImageWidth))
+            metadata["width"] = dir.GetInt32(JpegDirectory.TagImageWidth);
+        if (dir.ContainsTag(JpegDirectory.TagImageHeight))
+            metadata["height"] = dir.GetInt32(JpegDirectory.TagImageHeight);
     }
 }

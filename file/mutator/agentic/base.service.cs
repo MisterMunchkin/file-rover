@@ -32,7 +32,7 @@ public class FileMutatorAgenticService
       Kernel = _kernel,
       Arguments = new KernelArguments(new OllamaPromptExecutionSettings()
       {
-        FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+        FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
         Temperature = 0.6f, // Add some randomness to encourage exploration
         ServiceId = KernelBuilder.LLama3_2_3b
       })
@@ -49,6 +49,8 @@ public class FileMutatorAgenticService
         - Never use any folder outside of {_watchPath}. Do NOT invent paths like "Documents" or "Downloads".
         - If no existing folder matches, move the file into "Uncategorised".
         - If you think a new folder might be needed, ask the user to confirm before creating it.
+
+        Do not respond with a function call in JSON format. Always invoke the function and return its result.
       """,
     };
 
