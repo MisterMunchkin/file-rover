@@ -1,8 +1,6 @@
 namespace file_rover.kernel;
 
 using Microsoft.SemanticKernel;
-using LLamaSharp.SemanticKernel;
-using Microsoft.Extensions.DependencyInjection;
  
 public static class KernelEmbeddedBuilder
 {
