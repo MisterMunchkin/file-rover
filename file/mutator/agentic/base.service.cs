@@ -34,7 +34,7 @@ public class FileMutatorAgenticService
       {
         FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
         Temperature = 0.6f, // Add some randomness to encourage exploration
-        ServiceId = KernelBuilder.LLama3_2_3b
+        ServiceId = KernelBuilder.LLama3_1_8b
       })
       {
         {"watch_path", _watchPath},
