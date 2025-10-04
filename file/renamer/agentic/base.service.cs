@@ -8,7 +8,6 @@ using Microsoft.SemanticKernel.Connectors.Ollama;
 
 namespace file_rover.file.renamer.agentic;
 
-//NOTE: Might not even be required.
 public class FileRenamerAgenticService
 {
     private readonly ChatHistoryAgentThread _agentThread = new();
@@ -30,16 +29,15 @@ public class FileRenamerAgenticService
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Required(),
                 Temperature = 0.1f, // More deterministic since we want consistent renaming
-                ServiceId = KernelBuilder.LLama3_1_8b
+                ServiceId = KernelBuilder.ToolAgent
             }),
             Name = "FileRenamerAgent",
             Instructions = """
-                You aren an agent that helps rename files withing a file system.
+                You aren an agent that helps rename files within a file system.
 
                 You will be provided with the following information in the request:
                     - image_path: The path to the image file to be renamed.
                     - convention: The naming convention using metadata fields enclosed in double curly braces, e.g., {{field_name}}-{{another_field}}
-                    - metadata_field_maps: A list of metadata fields to extract and use in the naming convention.
 
                 Your task is to:
                     - Use the file extension to determine which plugin function to use to rename the file. (e.g., "jpg" -> "rename_image")
@@ -51,27 +49,22 @@ public class FileRenamerAgenticService
             """
         };
 
-        Console.WriteLine(":: FileRenamerAgent initialized ::");
+        Console.WriteLine(":: FileRenamerAgent initialized :: ");
     }
 
     public async Task TriggerRename(string filePath)
     {
         try
         {
+            //TODO: SemanticKernel Plugin not working for some reason. It works for mutator though
             //TODO: Conventions and metadata fields should come from user config.
             var testConvention = "{{file_name}}-{{height}}x{{width}}-{{file_size}}";
-            List<string> testMetadataFields = [
-                "file_name",
-                "height",
-                "width",
-                "file_size"
-            ];
+            var danicasConvention = "{{file_name}}-{{height}}x{{width}}-{{file_size}}";
 
             var jsonRequest = JsonSerializer.Serialize(new RenameImageFileRequest
             {
                 ImagePath = filePath,
-                Convention = testConvention,
-                MetadataFieldMaps = testMetadataFields
+                Convention = danicasConvention,
             }) ?? throw new JsonException("Failed to serialize rename request.");
 
             var message = new ChatMessageContent(AuthorRole.User, jsonRequest);

@@ -11,20 +11,17 @@ public static class KernelBuilder
     public static readonly string LLama3_1_8b = "llama3.1:8b";
     public static readonly string LLama3_2_3b = "llama3.2:3b";
 
+    public static readonly string ToolAgent = "qwen2.5:7b";
+    public static readonly Uri LocalUri = new("http://localhost:11434");
 
     public static void Build()
     {
         Builder = Kernel.CreateBuilder();
 
         Builder.AddOllamaChatCompletion(
-            modelId: LLama3_1_8b,
-            endpoint: new Uri("http://localhost:11434"),
-            serviceId: LLama3_1_8b
-        );
-        Builder.AddOllamaChatCompletion(
-            modelId: LLama3_2_3b,
-            endpoint: new Uri("http://localhost:11434"),
-            serviceId: LLama3_2_3b
+            modelId: ToolAgent,
+            endpoint: LocalUri,
+            serviceId: ToolAgent
         );
 
         Kernel = Builder.Build();

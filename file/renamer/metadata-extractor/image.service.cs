@@ -38,17 +38,17 @@ public class FileRenamerMetadataExtractorImageService : FileRenamerMetadataExtra
         }
     }
 
-//TODO: ExtractMetadata is buggy as hell.
-    public override Task<Dictionary<string, object>> ExtractMetadata(string filePath)
+//TODO: Should only extract the necessary metadata based on the metadata list
+    public override Task<Dictionary<string, string>> ExtractMetadata(string filePath)
     {
-        var metadata = new Dictionary<string, object>();
+        var metadata = new Dictionary<string, string>();
 
         var fileInfo = new FileInfo(filePath) ??
             throw new FileNotFoundException($"File not found: {filePath}");
 
-        metadata["file_size"] = fileInfo.Length;
-        metadata["created_at"] = fileInfo.CreationTime;
-        metadata["modified_at"] = fileInfo.LastWriteTime;
+        metadata["file_size"] = fileInfo.Length.ToString();
+        metadata["created_at"] = fileInfo.CreationTime.ToString();
+        metadata["modified_at"] = fileInfo.LastWriteTime.ToString();
 
         var directories = ImageMetadataReader.ReadMetadata(filePath);
 
@@ -89,56 +89,56 @@ public class FileRenamerMetadataExtractorImageService : FileRenamerMetadataExtra
 
         if (exifSubIfd != null && exifSubIfd.ContainsTag(ExifDirectoryBase.TagColorSpace))
             metadata["color_space"] = exifSubIfd.GetDescription(ExifDirectoryBase.TagColorSpace) ?? "";
-        
+
 
         return Task.FromResult(metadata);
     }
 
-    private static void ExtractTiffMetadata(GeoTiffDirectory tiffDir, Dictionary<string, object> metadata)
+    private static void ExtractTiffMetadata(GeoTiffDirectory tiffDir, Dictionary<string, string> metadata)
     {
         if (tiffDir.ContainsTag(GeoTiffDirectory.TagGeographicType))
             metadata["geo_type"] = tiffDir.GetDescription(GeoTiffDirectory.TagGeographicType) ?? "";
         if (tiffDir.ContainsTag(GeoTiffDirectory.TagProjCenterLat))
-            metadata["proj_center_lat"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLat);
+            metadata["proj_center_lat"] = tiffDir.GetString(GeoTiffDirectory.TagProjCenterLat) ?? "";
         if (tiffDir.ContainsTag(GeoTiffDirectory.TagProjCenterLong))
-            metadata["proj_center_long"] = tiffDir.GetInt32(GeoTiffDirectory.TagProjCenterLong);
+            metadata["proj_center_long"] = tiffDir.GetString(GeoTiffDirectory.TagProjCenterLong) ?? "";
     }
 
-    private static void ExtractBmpMetadata(BmpHeaderDirectory bmpDir, Dictionary<string, object> metadata)
+    private static void ExtractBmpMetadata(BmpHeaderDirectory bmpDir, Dictionary<string, string> metadata)
     {
         if (bmpDir.ContainsTag(BmpHeaderDirectory.TagImageWidth))
-            metadata["width"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageWidth);
+            metadata["width"] = bmpDir.GetString(BmpHeaderDirectory.TagImageWidth) ?? "";
         if (bmpDir.ContainsTag(BmpHeaderDirectory.TagImageHeight))
-            metadata["height"] = bmpDir.GetInt32(BmpHeaderDirectory.TagImageHeight);
+            metadata["height"] = bmpDir.GetString(BmpHeaderDirectory.TagImageHeight) ?? "";
         if (bmpDir.ContainsTag(BmpHeaderDirectory.TagColorSpaceType))
             metadata["color_space"] = bmpDir.GetDescription(BmpHeaderDirectory.TagColorSpaceType) ?? "";
     }
 
-    private static void ExtractGifMetadata(GifHeaderDirectory gifDir, Dictionary<string, object> metadata)
+    private static void ExtractGifMetadata(GifHeaderDirectory gifDir, Dictionary<string, string> metadata)
     {
         if (gifDir.ContainsTag(GifHeaderDirectory.TagImageWidth))
-            metadata["width"] = gifDir.GetInt32(GifHeaderDirectory.TagImageWidth);
+            metadata["width"] = gifDir.GetString(GifHeaderDirectory.TagImageWidth) ?? "";
         if (gifDir.ContainsTag(GifHeaderDirectory.TagImageHeight))
-            metadata["height"] = gifDir.GetInt32(GifHeaderDirectory.TagImageHeight);
+            metadata["height"] = gifDir.GetString(GifHeaderDirectory.TagImageHeight) ?? "";
     }
 
-    private static void ExtractPngMetadata(PngDirectory pngDir, Dictionary<string, object> metadata)
+    private static void ExtractPngMetadata(PngDirectory pngDir, Dictionary<string, string> metadata)
     {
         if (pngDir.ContainsTag(PngDirectory.TagImageWidth))
-            metadata["width"] = pngDir.GetInt32(PngDirectory.TagImageWidth);
+            metadata["width"] = pngDir.GetString(PngDirectory.TagImageWidth) ?? "";
         if (pngDir.ContainsTag(PngDirectory.TagImageHeight))
-            metadata["height"] = pngDir.GetInt32(PngDirectory.TagImageHeight);
+            metadata["height"] = pngDir.GetString(PngDirectory.TagImageHeight) ?? "";
         if (pngDir.ContainsTag(PngDirectory.TagColorType))
             metadata["color_type"] = pngDir.GetDescription(PngDirectory.TagColorType) ?? "";
         if (pngDir.ContainsTag(PngDirectory.TagBackgroundColor))
             metadata["background_color"] = pngDir.GetDescription(PngDirectory.TagBackgroundColor) ?? "";
     }
 
-    private static void ExtractJpegMetadata(JpegDirectory dir, Dictionary<string, object> metadata)
+    private static void ExtractJpegMetadata(JpegDirectory dir, Dictionary<string, string> metadata)
     {
         if (dir.ContainsTag(JpegDirectory.TagImageWidth))
-            metadata["width"] = dir.GetInt32(JpegDirectory.TagImageWidth);
+            metadata["width"] = dir.GetString(JpegDirectory.TagImageWidth) ?? "";
         if (dir.ContainsTag(JpegDirectory.TagImageHeight))
-            metadata["height"] = dir.GetInt32(JpegDirectory.TagImageHeight);
+            metadata["height"] = dir.GetString(JpegDirectory.TagImageHeight) ?? "";
     }
 }

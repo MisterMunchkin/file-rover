@@ -8,5 +8,5 @@ public abstract class FileRenamerMetadataExtractorBaseService
        { "created_at", "Created At" },
        { "modified_at", "Modified At"}
     };
-    public abstract Task<Dictionary<string, object>> ExtractMetadata(string filePath);
+    public abstract Task<Dictionary<string, string>> ExtractMetadata(string filePath);
 }
